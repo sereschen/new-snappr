@@ -1,45 +1,70 @@
 import { useState, useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import styles from './App.module.scss'
-import cn from 'classnames'
+import axios from 'axios';
 
-const fecthData = async () => {
-  const response = await fetch('http://localhost:3000/');
-  const data = await response.json()
-  return data;
+type User = {
+  id?: number;
+  email?: string;
+  password?: string;
 }
 
 function App() {
-  const [count, setCount] = useState(0)
-  const [data, setData] = useState<{message: string} | null>(null)
+  const [users, setUsers] = useState<User[] | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
-  useEffect(() => {
-    fecthData().then(setData)
+
+  const fecthData = async () => {
+    const response = await axios.get('http://localhost:3000/user/all');
+    const data = response.data;
+    return data;
+  }
+  
+  const createUser = async (user: User | null) => {
+    if (!user) {
+      return;
+    }
+    try {
+      const response = await axios.post('http://localhost:3000/user/create', user);
+      const data = response.data;
+      return data;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  useEffect(() => { 
+    fecthData().then(setUsers);
   }, [])
 
   return (
     <>
-      <div>
-        <a>
-          <img src={viteLogo} className={styles.logo} alt="Vite logo" />
-        </a>
-        <a>
-          <img src={reactLogo} className={cn(styles.logo, styles.react)} alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
+      <h1>User Management</h1>
       <div className={styles.card}>
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+        <div className={styles.formGroup}>
+          <label>Email</label>
+          <input type="text" value={user?.email} onChange={(e) => setUser({ 
+            ...user,
+            email: e.target.value || ''
+          })} />
+        </div>
+        <div className={styles.formGroup}>
+          <label>Password</label>
+          <input type="text" value={user?.password} onChange={(e) => setUser({
+            ...user,
+            password: e.target.value || ''
+          })} />
+        </div>
+        <button onClick={() => createUser(user).then(() => fecthData().then(setUsers))}>
+          Create User
         </button>
-        <p>
-          {data?.message}
-        </p>
+        <div >
+          {users?.map((user) => (
+            <div key={user?.id}>
+              {user?.email}
+            </div>
+          ))}
+        </div>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </>
   )
 }

@@ -1,13 +1,15 @@
 import express from 'express';
 import cors from 'cors';
 import http from 'http';
-import { asyncMiddleware } from './middlewares/asyncMiddleware';
-import { mikroOrmMiddleware } from './middlewares/mikroOrmMiddleware';
 import { User } from './entities/User';
-import { EntityManager, EntityRepository, MikroORM, PostgreSqlDriver, RequestContext } from '@mikro-orm/postgresql';
+import { EntityManager, EntityRepository, MikroORM, PostgreSqlDriver } from '@mikro-orm/postgresql';
 import { Migrator } from '@mikro-orm/migrations';
+import UserController from './controllers/UserController';
+import errorHandlerMiddleware from './middlewares/errorHandlerMiddleware';
 
-export const DI = {} as {
+import 'express-async-errors';  
+
+export const context  = {} as {
   server: http.Server;
   orm: MikroORM,
   em: EntityManager,
@@ -15,10 +17,10 @@ export const DI = {} as {
 };
 
 export const app = express();
-const port = process.env.PORT || 3000;
+const port = Number(process.env.PORT) || 3000;
 
 export const init = (async () => {
-  DI.orm = await MikroORM.init({
+  context.orm = await MikroORM.init({
     entities: [User],
     entitiesTs: [User],
     dbName: 'snappr-db',
@@ -26,28 +28,21 @@ export const init = (async () => {
     allowGlobalContext: true,
     extensions: [Migrator],
   });
-  DI.em = DI.orm.em;
-  DI.users = DI.orm.em.getRepository(User);
+  context.em = context.orm.em;
+  context.users = context.orm.em.getRepository(User);
 
   app.use(express.json());
   app.use(cors());
+
+  app.use(errorHandlerMiddleware);
+
   app.get('/', (req, res) => {
     res.json({ message: 'Welcome to Snappr API' })
   });
-  app.get('/users', (req, res) => {
-    res.json(DI.users.findAll());
-  });
-  
-  app.post('/users/create', (req, res) => {
-    const user = new User();
-    user.email = req.body.email;
-    user.password = req.body.password;
-    DI.em.create(User, user);
-    DI.em.flush();
-    res.json(user);
-  });
 
-  DI.server = app.listen(port, () => {
-    console.log(`MikroORM express TS example started at http://localhost:${port}`);
+  app.use('/user', UserController);
+  
+  context.server = app.listen(port, () => {
+    console.log(`Express server started at http://localhost:${port}`);
   });
 })();
