@@ -1,28 +1,40 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
-import './App.css'
+import styles from './App.module.scss'
+import cn from 'classnames'
+
+const fecthData = async () => {
+  const response = await fetch('http://localhost:3000/');
+  const data = await response.json()
+  return data;
+}
 
 function App() {
   const [count, setCount] = useState(0)
+  const [data, setData] = useState<{message: string} | null>(null)
+
+  useEffect(() => {
+    fecthData().then(setData)
+  }, [])
 
   return (
     <>
       <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
+        <a>
+          <img src={viteLogo} className={styles.logo} alt="Vite logo" />
         </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
+        <a>
+          <img src={reactLogo} className={cn(styles.logo, styles.react)} alt="React logo" />
         </a>
       </div>
       <h1>Vite + React</h1>
-      <div className="card">
+      <div className={styles.card}>
         <button onClick={() => setCount((count) => count + 1)}>
           count is {count}
         </button>
         <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
+          {data?.message}
         </p>
       </div>
       <p className="read-the-docs">
